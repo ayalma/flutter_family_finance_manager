@@ -1,12 +1,18 @@
 import 'dart:async';
 
 import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
+
+typedef ReadSmsCallback = Future<dynamic> Function(String payload);
 
 class FlutterSmsPlugin {
   static const CHANEL_NAME = "flutter_sms_plugin";
   static final _instance = FlutterSmsPlugin._internal();
   MethodChannel _channel;
+
+  ReadSmsCallback _callback;
+  setReadSmsCallback(ReadSmsCallback callback)
+  { _callback = callback;
+  }
 
   factory FlutterSmsPlugin() => _instance;
 
@@ -26,8 +32,7 @@ class FlutterSmsPlugin {
   Future<void> handler(MethodCall call) {
     switch (call.method) {
       case 'readSms':
-       // return _selectNotificationCallback(call.arguments);
-        return Future.error('method not defined');
+        return _callback(call.arguments);
       default:
         return Future.error('method not defined');
     }
