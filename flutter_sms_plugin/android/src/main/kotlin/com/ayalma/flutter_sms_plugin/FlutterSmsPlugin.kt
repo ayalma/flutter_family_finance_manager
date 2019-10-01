@@ -14,9 +14,8 @@ class FlutterSmsPlugin(registrar: Registrar) : MethodCallHandler, BroadcastRecei
   var activity: Activity = registrar.activity()
   var channel =  MethodChannel(registrar.messenger(), CHANEL_NAME)
 
-
   override fun onReceive(p0: Context?, p1: Intent?) {
-    channel.invokeMethod()
+    channel.invokeMethod("readSms","test");
   }
 
   companion object {
