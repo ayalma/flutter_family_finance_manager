@@ -1,4 +1,3 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
   package="com.ayalma.flutter_sms_plugin">
-    <uses-permission android:name="android.permission.READ_SMS"/>
 </manifest>

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_family_finance_manager/datasource/database.dart';
+import 'package:flutter_sms_plugin/flutter_sms_plugin.dart';
 
 void main() => runApp(MyApp());
 
@@ -6,6 +8,10 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
+      var platformVersion =  FlutterSmsPlugin().platformVersion;
+      AppDataBase().db.then((db){
+
+      });
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(

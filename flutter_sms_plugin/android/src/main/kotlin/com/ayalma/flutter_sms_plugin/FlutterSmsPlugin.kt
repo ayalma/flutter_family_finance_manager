@@ -2,32 +2,33 @@ package com.ayalma.flutter_sms_plugin
 
 import android.Manifest
 import android.app.Activity
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.provider.Telephony
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
-import io.flutter.plugin.common.PluginRegistry.Registrar
 import io.flutter.plugin.common.PluginRegistry
+import io.flutter.plugin.common.PluginRegistry.Registrar
 
-class FlutterSmsPlugin(registrar: Registrar) : MethodCallHandler, BroadcastReceiver(), PluginRegistry.RequestPermissionsResultListener {
-    var activity: Activity = registrar.activity()
-    var channel = MethodChannel(registrar.messenger(), CHANEL_NAME)
-    val permissions = arrayOf(Manifest.permission.READ_SMS, Manifest.permission.RECEIVE_SMS)
+class FlutterSmsPlugin() : MethodCallHandler, PluginRegistry.RequestPermissionsResultListener {
 
-    init {
+    constructor(registrar: Registrar) : this() {
+        this.activity = registrar.activity()
+        this.channel = MethodChannel(registrar.messenger(), CHANEL_NAME)
+        this.permissions = arrayOf(Manifest.permission.READ_SMS, Manifest.permission.RECEIVE_SMS)
         channel.setMethodCallHandler(this)
         registrar.addRequestPermissionsResultListener(this)
+        registrar.activeContext().registerReceiver(SmsBroadcastReceiver(channel), IntentFilter(Telephony.Sms.Intents.SMS_RECEIVED_ACTION))
     }
 
-    override fun onReceive(p0: Context?, p1: Intent?) {
-        channel.invokeMethod("readSms", "test");
-    }
+    lateinit var activity: Activity
+    lateinit var channel: MethodChannel
+    lateinit var permissions: Array<String>
+
 
     companion object {
         private const val CHANEL_NAME = "flutter_sms_plugin"
@@ -35,6 +36,10 @@ class FlutterSmsPlugin(registrar: Registrar) : MethodCallHandler, BroadcastRecei
         @JvmStatic
         fun registerWith(registrar: Registrar) {
             val smsPlugin = FlutterSmsPlugin(registrar)
+        }
+
+        fun setPluginRegistrantCallback(app: PluginRegistry.PluginRegistrantCallback) {
+         //   TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
         }
     }
 
@@ -49,7 +54,7 @@ class FlutterSmsPlugin(registrar: Registrar) : MethodCallHandler, BroadcastRecei
     }
 
     private fun requestPermission(okCallback: () -> Unit) {
-        var smsPermision =  ContextCompat.checkSelfPermission(activity, Manifest.permission.READ_SMS)
+        var smsPermision = ContextCompat.checkSelfPermission(activity.applicationContext, Manifest.permission.READ_SMS)
         if (smsPermision
                 != PackageManager.PERMISSION_GRANTED) {
 
@@ -83,6 +88,5 @@ class FlutterSmsPlugin(registrar: Registrar) : MethodCallHandler, BroadcastRecei
         }
         return true
     }
-
 
 }
