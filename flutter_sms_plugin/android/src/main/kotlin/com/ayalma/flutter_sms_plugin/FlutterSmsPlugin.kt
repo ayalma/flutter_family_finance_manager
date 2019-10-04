@@ -2,9 +2,9 @@ package com.ayalma.flutter_sms_plugin
 
 import android.Manifest
 import android.app.Activity
-import android.content.IntentFilter
+import android.content.Context
 import android.content.pm.PackageManager
-import android.provider.Telephony
+import android.util.Log
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import io.flutter.plugin.common.MethodCall
@@ -13,63 +13,111 @@ import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
 import io.flutter.plugin.common.PluginRegistry
 import io.flutter.plugin.common.PluginRegistry.Registrar
+import io.flutter.view.FlutterNativeView
+import io.flutter.view.FlutterView
 
-class FlutterSmsPlugin() : MethodCallHandler, PluginRegistry.RequestPermissionsResultListener {
 
-    constructor(registrar: Registrar) : this() {
-        this.activity = registrar.activity()
-        this.channel = MethodChannel(registrar.messenger(), CHANEL_NAME)
-        this.permissions = arrayOf(Manifest.permission.READ_SMS, Manifest.permission.RECEIVE_SMS)
+class FlutterSmsPlugin(private val registrar: Registrar) : MethodCallHandler, PluginRegistry.RequestPermissionsResultListener,PluginRegistry.ViewDestroyListener {
+
+    private val context: Context = registrar.context()
+    private val channel: MethodChannel = MethodChannel(registrar.messenger(), CHANEL_NAME)
+    private val backgroundChannel: MethodChannel = MethodChannel(registrar.messenger(), BACKGROUND_CHANEL_NAME)
+    private val permissions: Array<String> = arrayOf(Manifest.permission.READ_SMS, Manifest.permission.RECEIVE_SMS)
+    private val TAG = "GeofencingPlugin"
+
+
+    init {
         channel.setMethodCallHandler(this)
+        backgroundChannel.setMethodCallHandler(this)
+
+        SmsService.setBackgroundChannel(backgroundChannel)
         registrar.addRequestPermissionsResultListener(this)
-        registrar.activeContext().registerReceiver(SmsBroadcastReceiver(channel), IntentFilter(Telephony.Sms.Intents.SMS_RECEIVED_ACTION))
+        registrar.addViewDestroyListener(this);
     }
 
-    lateinit var activity: Activity
-    lateinit var channel: MethodChannel
-    lateinit var permissions: Array<String>
-
-
     companion object {
-        private const val CHANEL_NAME = "flutter_sms_plugin"
+        private const val CHANEL_NAME = "plugins.flutter.io/sms_plugin"
+        private const val BACKGROUND_CHANEL_NAME = "plugins.flutter.io/sms_plugin_background"
         private const val PERMISSION_REQUEST_CODE = 10001
         @JvmStatic
         fun registerWith(registrar: Registrar) {
             val smsPlugin = FlutterSmsPlugin(registrar)
         }
 
-        fun setPluginRegistrantCallback(app: PluginRegistry.PluginRegistrantCallback) {
-         //   TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-        }
     }
 
     override fun onMethodCall(call: MethodCall, result: Result) {
-        if (call.method == "getPlatformVersion") {
-            requestPermission {
+
+        when(call.method) {
+            "SmsPlugin.start" -> {
+                val args = call.arguments() as ArrayList<Long>
+                var callbackDispatcher: Long = 0
+                try {
+                    callbackDispatcher = args[0]
+                } catch (e: Exception) {
+                    Log.e(TAG, "There was an exception when getting callback handle from Dart side")
+                    e.printStackTrace()
+                }
+                SmsService.setCallbackDispatcher(context, callbackDispatcher)
+                SmsService.startBackgroundIsolate(context, callbackDispatcher)
+
+                result.success(true)
+            }
+            "SmsPlugin.initialized"-> {
+                SmsService.onInitialized(context)
+                result.success(true)
+            }
+            "SmsPlugin.config"->{
+                val args = call.arguments() as ArrayList<Long>
+                var backgroundCallbackHandle: Long = 0
+                try {
+                    backgroundCallbackHandle = args[0]
+                } catch (e: Exception) {
+                    Log.e(TAG, "There was an exception when getting callback handle from Dart side")
+                    e.printStackTrace()
+                }
+                SmsService.setBackgroundMessageHandle(context,backgroundCallbackHandle)
+            }
+            "getPlatformVersion" -> requestPermission {
                 result.success("Android ${android.os.Build.VERSION.RELEASE}")
             }
-        } else {
-            result.notImplemented()
+            else -> result.notImplemented()
         }
     }
 
+    /**
+     * Transitions the Flutter execution context that owns this plugin from foreground execution to
+     * background execution.
+     *
+     *
+     * Invoked when the [FlutterView] connected to the given [FlutterNativeView] is
+     * destroyed.
+     *
+     *
+     * Returns true if the given `nativeView` was successfully stored by this plugin, or
+     * false if a different [FlutterNativeView] was already registered with this plugin.
+     */
+    override fun onViewDestroy(nativeView: FlutterNativeView): Boolean {
+        return SmsService.setBackgroundFlutterView(nativeView)
+    }
+
     private fun requestPermission(okCallback: () -> Unit) {
-        var smsPermision = ContextCompat.checkSelfPermission(activity.applicationContext, Manifest.permission.READ_SMS)
+        var smsPermision = ContextCompat.checkSelfPermission(context.applicationContext, Manifest.permission.READ_SMS)
         if (smsPermision
                 != PackageManager.PERMISSION_GRANTED) {
 
             // Should we show an explanation?
-            if (ActivityCompat.shouldShowRequestPermissionRationale(activity,
+            if (ActivityCompat.shouldShowRequestPermissionRationale(registrar.activity(),
                             Manifest.permission.READ_SMS)) {
                 // ask it with flutter
                 // Show an explanation to the user *asynchronously* -- don't block
                 // this thread waiting for the user's response! After the user
                 // sees the explanation, try again to request the permission.
-                ActivityCompat.requestPermissions(activity, permissions, PERMISSION_REQUEST_CODE)
+                ActivityCompat.requestPermissions(registrar.activity(), permissions, PERMISSION_REQUEST_CODE)
 
             } else {
                 /// no explanation needed just ask permission
-                ActivityCompat.requestPermissions(activity, permissions, PERMISSION_REQUEST_CODE)
+                ActivityCompat.requestPermissions(registrar.activity(), permissions, PERMISSION_REQUEST_CODE)
             }
 
         } else {
@@ -88,5 +136,6 @@ class FlutterSmsPlugin() : MethodCallHandler, PluginRegistry.RequestPermissionsR
         }
         return true
     }
+
 
 }

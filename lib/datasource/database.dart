@@ -1,4 +1,4 @@
-import 'package:flutter_family_finance_manager/datasource/transaction_dao.dart';
+
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -17,8 +17,9 @@ class AppDataBase {
       join(await getDatabasesPath(), 'family_finance.db'),
       // When the database is first created, create a table to store dogs.
       onCreate: (db, version) {
-        return db.execute(
-          TransactionDao.CreateQuery
+       return db.execute(
+         // TransactionDao.CreateQuery
+         "Create Table test(id INTEGER PRIMARY KEY autoincrement,msg Text)"
         );
       },
       // Set the version. This executes the onCreate function and provides a

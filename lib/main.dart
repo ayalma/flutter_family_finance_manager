@@ -1,17 +1,45 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_family_finance_manager/datasource/database.dart';
 import 'package:flutter_sms_plugin/flutter_sms_plugin.dart';
+import 'package:sqflite/sqflite.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 void main() => runApp(MyApp());
+
+Future handler(String message) async{
+  print(message);
+
+/*  FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = new FlutterLocalNotificationsPlugin();
+// initialise the plugin. app_icon needs to be a added as a drawable resource to the Android head project
+  var initializationSettingsAndroid =
+  new AndroidInitializationSettings('ic_launcher');
+  var initializationSettingsIOS = new IOSInitializationSettings();
+  var initializationSettings = new InitializationSettings(
+      initializationSettingsAndroid, initializationSettingsIOS);
+  flutterLocalNotificationsPlugin.initialize(initializationSettings);
+
+  var androidPlatformChannelSpecifics = AndroidNotificationDetails(
+      'test', 'your channel name', 'your channel description',
+      importance: Importance.Max, priority: Priority.High, ticker: 'ticker');
+  var iOSPlatformChannelSpecifics = IOSNotificationDetails();
+  var platformChannelSpecifics = NotificationDetails(
+      androidPlatformChannelSpecifics, iOSPlatformChannelSpecifics);
+  await flutterLocalNotificationsPlugin.show(
+      0, 'plain title', 'plain body', platformChannelSpecifics,
+      payload: 'item x');*/
+
+ /* var db = await AppDataBase().db.catchError((error){
+    print(error);
+  });
+  var int = await db.insert("test", {"msg":"test"});*/
+
+  return Future<bool>.value();
+}
 
 class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-      var platformVersion =  FlutterSmsPlugin().platformVersion;
-      AppDataBase().db.then((db){
-
-      });
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
@@ -51,8 +79,20 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
+  var db;
 
+  @override
+  void initState() {
+
+    db = AppDataBase().db;
+    FlutterSmsPlugin().start().then((result){
+      FlutterSmsPlugin().config(handler);
+    });
+
+    super.initState();
+  }
   void _incrementCounter() {
+
     setState(() {
       // This call to setState tells the Flutter framework that something has
       // changed in this State, which causes it to rerun the build method below
@@ -65,6 +105,37 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text("TEST"),),
+      body: FutureBuilder<Database>(
+        future: db,
+        builder: (context,data){
+          if(data.hasData)
+            {
+              return FutureBuilder<List<Map<String,dynamic>>>(
+                future: data.data.query("test"),
+                builder: (c,qdata){
+                  if(qdata.hasData)
+                    {
+                      return ListView.builder(itemBuilder: (context,index){
+                        return ListTile(
+                          title: Text(qdata.data[index]["msg"].toString()),
+                          subtitle: Text(qdata.data[index]["id"].toString()),
+                        );
+                      },itemCount: qdata.data.length,);
+                    }
+                  else{
+                    return Text("no data");
+                  }
+                },
+              );
+            }
+          else{
+            return Text("Loading");
+          }
+        },
+      ),
+    );
     // This method is rerun every time setState is called, for instance as done
     // by the _incrementCounter method above.
     //
