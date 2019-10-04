@@ -7,11 +7,14 @@ package com.ayalma.flutter_sms_plugin;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Bundle;
 import android.os.Handler;
+import android.telephony.SmsMessage;
 import android.util.Log;
 
 import androidx.core.app.JobIntentService;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -216,10 +219,8 @@ public class SmsService extends JobIntentService {
 
 
         Map<String, Object> args = new HashMap<>();
-        Map<String, Object> messageData = new HashMap<>();
-
+        List<Map<String,Object>> messageData = retriveMessages(intent);
         args.put("handle", backgroundMessageHandle);
-        messageData.put("text", "test that must fill with my own data");
         args.put("message", messageData);
 
         // Handle the alarm event in Dart. Note that for this plugin, we don't
@@ -231,6 +232,23 @@ public class SmsService extends JobIntentService {
                 "", args, result);
     }
 
+   private static List<Map<String,Object>> retriveMessages(Intent intent){
+        Bundle bundle = intent.getExtras();
+       final List<Map<String,Object>> messages = new ArrayList<Map<String,Object>>();
+        if (bundle != null) {
+            Object[] pdus = (Object[])bundle.get("pdus");
+
+            for (int i = 0; i < pdus.length; i++) {
+                Map<String,Object> map = new HashMap<>();
+                SmsMessage smsMessage =  SmsMessage.createFromPdu((byte[])pdus[i]);
+                //map.put("body",smsMessage.g());
+                map.put("sender",smsMessage.getDisplayOriginatingAddress());
+                map.put("body",smsMessage.getMessageBody());
+                messages.add(map);
+            }
+        }
+        return messages;
+    }
 
     @Override
     public void onCreate() {

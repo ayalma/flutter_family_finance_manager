@@ -3,8 +3,15 @@ package com.ayalma.flutter_sms_plugin;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Bundle;
+import android.telephony.SmsMessage;
+import android.util.Log;
 
 public class SmsRecevier extends BroadcastReceiver {
+
+    private static final String SMS_RECEIVED = "android.provider.Telephony.SMS_RECEIVED";
+    private static final String TAG = SmsRecevier.class.getSimpleName();
+
     /**
      * Invoked by the OS when a timer goes off.
      *
@@ -22,6 +29,10 @@ public class SmsRecevier extends BroadcastReceiver {
      */
     @Override
     public void onReceive(Context context, Intent intent) {
-        SmsService.enqueueSmsProcessing(context, intent);
+        Log.i(TAG, "Intent recieved: " + intent.getAction());
+        if (intent.getAction() == SMS_RECEIVED) {
+            SmsService.enqueueSmsProcessing(context,intent);
+
+        }
     }
 }
