@@ -9,7 +9,7 @@ void main() => runApp(MyApp());
 Future handler(String message) async{
   print(message);
 
-/*  FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = new FlutterLocalNotificationsPlugin();
+  FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = new FlutterLocalNotificationsPlugin();
 // initialise the plugin. app_icon needs to be a added as a drawable resource to the Android head project
   var initializationSettingsAndroid =
   new AndroidInitializationSettings('ic_launcher');
@@ -26,12 +26,12 @@ Future handler(String message) async{
       androidPlatformChannelSpecifics, iOSPlatformChannelSpecifics);
   await flutterLocalNotificationsPlugin.show(
       0, 'plain title', 'plain body', platformChannelSpecifics,
-      payload: 'item x');*/
+      payload: 'item x');
 
- /* var db = await AppDataBase().db.catchError((error){
+  var db = await AppDataBase().db.catchError((error){
     print(error);
   });
-  var int = await db.insert("test", {"msg":"test"});*/
+  var int = await db.insert("test", {"msg":message});
 
   return Future<bool>.value();
 }
