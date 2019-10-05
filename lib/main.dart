@@ -87,9 +87,19 @@ class _MyHomePageState extends State<MyHomePage> {
   void initState() {
 
     db = AppDataBase().db;
-    FlutterSmsPlugin().start().then((result){
-      FlutterSmsPlugin().config(handler);
+    FlutterSmsPlugin().requestPermissions((bool granted)async{
+      if(granted)
+        {
+          var isStarted = await FlutterSmsPlugin().start();
+          if(isStarted) {
+            FlutterSmsPlugin().config(handler);
+            return true;
+          }
+        }
+      return false;
+
     });
+
 
     super.initState();
   }

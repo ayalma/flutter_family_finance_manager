@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:ui';
 
 import 'package:flutter/services.dart';
@@ -12,6 +11,7 @@ import 'package:flutter_sms_plugin/src/sms_callback_dispatcher.dart';
 // found in the LICENSE file.
 
 typedef Future<dynamic> SmsMessageHandler(String message);
+typedef Future<dynamic> PermissionCallbackHandler(bool granted);
 
 class FlutterSmsPlugin {
   factory FlutterSmsPlugin() => _instance;
@@ -26,41 +26,44 @@ class FlutterSmsPlugin {
   final MethodChannel _channel;
   SmsMessageHandler _smsMessageHandler;
 
-  Future<List<dynamic>> platformVersion() async{
-    return await _channel.invokeMethod<List<dynamic>>(
-        'SmsPlugin.getPlatform');
+  Future<List<dynamic>> platformVersion() async {
+    return await _channel.invokeMethod<List<dynamic>>('SmsPlugin.getPlatform');
   }
 
-  Future<bool>  start() async {
+  PermissionCallbackHandler _permissionCallbackHandler;
 
+  Future<void> requestPermissions(
+      PermissionCallbackHandler permissionCallbackHandler) async {
+    this._permissionCallbackHandler = permissionCallbackHandler;
+    return await _channel.invokeMethod<void>('SmsPlugin.requestPermissions');
+  }
 
-    final CallbackHandle backgroundSetupHandle  =
+  Future<bool> start() async {
+    final CallbackHandle backgroundSetupHandle =
         PluginUtilities.getCallbackHandle(smsCallbackDispatcher);
 
     return await _channel.invokeMethod<bool>(
         'SmsPlugin.start', <dynamic>[backgroundSetupHandle.toRawHandle()]);
   }
-  Future<bool> config(SmsMessageHandler smsMessageHandler) async
-  {
+
+  Future<bool> config(SmsMessageHandler smsMessageHandler) async {
     _smsMessageHandler = smsMessageHandler;
 
-    final CallbackHandle backgroundSetupHandle  =
-    PluginUtilities.getCallbackHandle(_smsMessageHandler);
+    final CallbackHandle backgroundSetupHandle =
+        PluginUtilities.getCallbackHandle(_smsMessageHandler);
     return await _channel.invokeMethod<bool>(
         'SmsPlugin.config', <dynamic>[backgroundSetupHandle.toRawHandle()]);
   }
 
-
   Future<dynamic> _handleMethod(MethodCall call) {
     switch (call.method) {
-      case 'readSms':
-      //return _callback(call.arguments);
+      case 'SmsPlugin.handlePermission':
+        if (_permissionCallbackHandler != null) {
+          return _permissionCallbackHandler(call.arguments);
+        }
+        return Future.error('method not defined');
       default:
         return Future.error('method not defined');
     }
   }
-
-
-
-
 }

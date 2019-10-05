@@ -49,6 +49,11 @@ class FlutterSmsPlugin(private val registrar: Registrar) : MethodCallHandler, Pl
     override fun onMethodCall(call: MethodCall, result: Result) {
 
         when (call.method) {
+            "SmsPlugin.requestPermissions"->{
+                requestPermission()
+                result.success(null)
+
+            }
             "SmsPlugin.start" -> {
                 val args = call.arguments() as ArrayList<Long>
                 var callbackDispatcher: Long = 0
@@ -124,7 +129,7 @@ class FlutterSmsPlugin(private val registrar: Registrar) : MethodCallHandler, Pl
         return SmsService.setBackgroundFlutterView(nativeView)
     }
 
-    private fun requestPermission(okCallback: () -> Unit) {
+    private fun requestPermission() {
         var smsPermision = ContextCompat.checkSelfPermission(context.applicationContext, Manifest.permission.READ_SMS)
         if (smsPermision
                 != PackageManager.PERMISSION_GRANTED) {
@@ -144,16 +149,19 @@ class FlutterSmsPlugin(private val registrar: Registrar) : MethodCallHandler, Pl
             }
 
         } else {
-            okCallback.invoke()
+            channel.invokeMethod("SmsPlugin.handlePermission",true)
         }
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>?, grantResults: IntArray?): Boolean {
         when (requestCode) {
             PERMISSION_REQUEST_CODE -> grantResults?.let { results ->
-                if (results.size == 2 && results.all { it == PackageManager.PERMISSION_GRANTED }) {
-                    // call method that nee
-                    return false
+                return if (results.size == 2 && results.all { it == PackageManager.PERMISSION_GRANTED }) {
+                    channel.invokeMethod("SmsPlugin.handlePermission",true)
+                    false
+                } else{
+                    channel.invokeMethod("SmsPlugin.handlePermission",false)
+                    true
                 }
             }
         }
