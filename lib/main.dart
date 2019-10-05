@@ -7,7 +7,13 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 void main() => runApp(MyApp());
 
 Future handler(String message) async{
+  var platformVersion = await FlutterSmsPlugin().platformVersion();
+  var db = await AppDataBase().db.catchError((error){
+    print(error);
+  });
+  var int = await db.insert("test", {"msg":message});
   print(message);
+
 
   FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = new FlutterLocalNotificationsPlugin();
 // initialise the plugin. app_icon needs to be a added as a drawable resource to the Android head project
@@ -25,13 +31,9 @@ Future handler(String message) async{
   var platformChannelSpecifics = NotificationDetails(
       androidPlatformChannelSpecifics, iOSPlatformChannelSpecifics);
   await flutterLocalNotificationsPlugin.show(
-      0, 'plain title', 'plain body', platformChannelSpecifics,
+      0, platformVersion.length.toString(), message, platformChannelSpecifics,
       payload: 'item x');
 
-  var db = await AppDataBase().db.catchError((error){
-    print(error);
-  });
-  var int = await db.insert("test", {"msg":message});
 
   return Future<bool>.value();
 }

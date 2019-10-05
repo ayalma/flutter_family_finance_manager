@@ -8,6 +8,7 @@
          FlutterApplication and put your custom class here. -->
     <uses-permission android:name="android.permission.RECEIVE_SMS" />
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
+    <uses-permission android:name="android.permission.READ_SMS" />
     <application
         android:name=".App"
         android:label="flutter_family_finance_manager"

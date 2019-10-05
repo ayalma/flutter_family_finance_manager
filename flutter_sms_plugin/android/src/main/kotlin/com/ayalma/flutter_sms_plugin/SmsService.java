@@ -9,6 +9,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
+import android.provider.Telephony;
 import android.telephony.SmsMessage;
 import android.util.Log;
 
@@ -240,10 +241,12 @@ public class SmsService extends JobIntentService {
 
             for (int i = 0; i < pdus.length; i++) {
                 Map<String,Object> map = new HashMap<>();
+
                 SmsMessage smsMessage =  SmsMessage.createFromPdu((byte[])pdus[i]);
                 //map.put("body",smsMessage.g());
                 map.put("sender",smsMessage.getDisplayOriginatingAddress());
                 map.put("body",smsMessage.getMessageBody());
+                map.put("id",smsMessage.getTimestampMillis());
                 messages.add(map);
             }
         }

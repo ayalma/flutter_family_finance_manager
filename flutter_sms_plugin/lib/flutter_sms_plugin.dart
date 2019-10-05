@@ -26,7 +26,10 @@ class FlutterSmsPlugin {
   final MethodChannel _channel;
   SmsMessageHandler _smsMessageHandler;
 
-  //final Platform _platform;
+  Future<List<dynamic>> platformVersion() async{
+    return await _channel.invokeMethod<List<dynamic>>(
+        'SmsPlugin.getPlatform');
+  }
 
   Future<bool>  start() async {
 
@@ -47,10 +50,6 @@ class FlutterSmsPlugin {
         'SmsPlugin.config', <dynamic>[backgroundSetupHandle.toRawHandle()]);
   }
 
-  Future<String> get platformVersion async {
-    final String version = await _channel.invokeMethod('getPlatformVersion');
-    return version;
-  }
 
   Future<dynamic> _handleMethod(MethodCall call) {
     switch (call.method) {

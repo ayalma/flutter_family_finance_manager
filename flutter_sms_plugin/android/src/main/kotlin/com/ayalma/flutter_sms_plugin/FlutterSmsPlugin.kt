@@ -1,9 +1,9 @@
 package com.ayalma.flutter_sms_plugin
 
 import android.Manifest
-import android.app.Activity
 import android.content.Context
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.util.Log
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -17,7 +17,7 @@ import io.flutter.view.FlutterNativeView
 import io.flutter.view.FlutterView
 
 
-class FlutterSmsPlugin(private val registrar: Registrar) : MethodCallHandler, PluginRegistry.RequestPermissionsResultListener,PluginRegistry.ViewDestroyListener {
+class FlutterSmsPlugin(private val registrar: Registrar) : MethodCallHandler, PluginRegistry.RequestPermissionsResultListener, PluginRegistry.ViewDestroyListener {
 
     private val context: Context = registrar.context()
     private val channel: MethodChannel = MethodChannel(registrar.messenger(), CHANEL_NAME)
@@ -48,7 +48,7 @@ class FlutterSmsPlugin(private val registrar: Registrar) : MethodCallHandler, Pl
 
     override fun onMethodCall(call: MethodCall, result: Result) {
 
-        when(call.method) {
+        when (call.method) {
             "SmsPlugin.start" -> {
                 val args = call.arguments() as ArrayList<Long>
                 var callbackDispatcher: Long = 0
@@ -63,11 +63,11 @@ class FlutterSmsPlugin(private val registrar: Registrar) : MethodCallHandler, Pl
 
                 result.success(true)
             }
-            "SmsPlugin.initialized"-> {
+            "SmsPlugin.initialized" -> {
                 SmsService.onInitialized(context)
                 result.success(true)
             }
-            "SmsPlugin.config"->{
+            "SmsPlugin.config" -> {
                 val args = call.arguments() as ArrayList<Long>
                 var backgroundCallbackHandle: Long = 0
                 try {
@@ -76,10 +76,33 @@ class FlutterSmsPlugin(private val registrar: Registrar) : MethodCallHandler, Pl
                     Log.e(TAG, "There was an exception when getting callback handle from Dart side")
                     e.printStackTrace()
                 }
-                SmsService.setBackgroundMessageHandle(context,backgroundCallbackHandle)
+                SmsService.setBackgroundMessageHandle(context, backgroundCallbackHandle)
             }
-            "getPlatformVersion" -> requestPermission {
-                result.success("Android ${android.os.Build.VERSION.RELEASE}")
+            "SmsPlugin.getPlatform" -> {
+                // Create Inbox box URI
+                val inboxURI = Uri.parse("content://sms/inbox")
+
+// List required columns
+                val reqCols = arrayOf("_id", "address", "body")
+
+// Get Content Resolver object, which will deal with Content Provider
+                val cr = context.contentResolver
+
+// Fetch Inbox SMS Message from Built-in Content Provider
+                val c = cr.query(inboxURI, reqCols, null, null, null)
+                var ids = arrayListOf<Long>()
+                c?.let { cursor ->
+                    if (cursor.moveToFirst()) {
+                        do {
+                            ids.add(cursor.getLong(cursor.getColumnIndexOrThrow("_id")))
+                        } while (cursor.moveToNext())
+
+                    }
+                }
+
+
+                c?.close()
+                result.success(ids)
             }
             else -> result.notImplemented()
         }
