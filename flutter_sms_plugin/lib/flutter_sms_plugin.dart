@@ -17,13 +17,16 @@ class FlutterSmsPlugin {
   factory FlutterSmsPlugin() => _instance;
 
   @visibleForTesting
-  FlutterSmsPlugin.private(MethodChannel channel) : _channel = channel;
+  FlutterSmsPlugin.private(MethodChannel channel) {
+    _channel = channel;
+    _channel.setMethodCallHandler(_handleMethod);
+  }
 
   static final FlutterSmsPlugin _instance = FlutterSmsPlugin.private(
     const MethodChannel(CHANEL_NAME),
   );
 
-  final MethodChannel _channel;
+  MethodChannel _channel;
   SmsMessageHandler _smsMessageHandler;
 
   Future<List<dynamic>> platformVersion() async {
