@@ -1,24 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_family_finance_manager/datasource/database.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_sms_plugin/flutter_sms_plugin.dart';
 import 'package:sqflite/sqflite.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+
+import 'datasource/transaction.dart';
+import 'datasource/transaction_dao.dart';
 
 void main() => runApp(MyApp());
 
-Future handler(String message) async{
+Future handler(String message) async {
   var platformVersion = await FlutterSmsPlugin().platformVersion();
-  var db = await AppDataBase().db.catchError((error){
-    print(error);
-  });
-  var int = await db.insert("test", {"msg":message});
-  print(message);
 
+  TransactionDao dao = TransactionDao(AppDataBase().db);
+  var id = await dao.CreateTransaction(SmsTransaction(
+      name: "نام ۱,۰۰۰,۰۰۰",
+      date: 13980102,
+      time: 121212,
+      tags: [message,"test","tag6", message],
+      value: 1000000));
 
-  FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = new FlutterLocalNotificationsPlugin();
+  print(id);
+
+  FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+      new FlutterLocalNotificationsPlugin();
 // initialise the plugin. app_icon needs to be a added as a drawable resource to the Android head project
   var initializationSettingsAndroid =
-  new AndroidInitializationSettings('ic_launcher');
+      new AndroidInitializationSettings('ic_launcher');
   var initializationSettingsIOS = new IOSInitializationSettings();
   var initializationSettings = new InitializationSettings(
       initializationSettingsAndroid, initializationSettingsIOS);
@@ -33,7 +41,6 @@ Future handler(String message) async{
   await flutterLocalNotificationsPlugin.show(
       0, platformVersion.length.toString(), message, platformChannelSpecifics,
       payload: 'item x');
-
 
   return Future<bool>.value();
 }
@@ -82,29 +89,26 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
   var db;
+  TransactionDao doa;
 
   @override
   void initState() {
-
-    db = AppDataBase().db;
-    FlutterSmsPlugin().requestPermissions((bool granted)async{
-      if(granted)
-        {
-          var isStarted = await FlutterSmsPlugin().start();
-          if(isStarted) {
-            FlutterSmsPlugin().config(handler);
-            return true;
-          }
+    doa = TransactionDao(AppDataBase().db);
+    FlutterSmsPlugin().requestPermissions((bool granted) async {
+      if (granted) {
+        var isStarted = await FlutterSmsPlugin().start();
+        if (isStarted) {
+          FlutterSmsPlugin().config(handler);
+          return true;
         }
+      }
       return false;
-
     });
-
 
     super.initState();
   }
-  void _incrementCounter() {
 
+  void _incrementCounter() {
     setState(() {
       // This call to setState tells the Flutter framework that something has
       // changed in this State, which causes it to rerun the build method below
@@ -118,31 +122,25 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("TEST"),),
-      body: FutureBuilder<Database>(
-        future: db,
-        builder: (context,data){
-          if(data.hasData)
-            {
-              return FutureBuilder<List<Map<String,dynamic>>>(
-                future: data.data.query("test"),
-                builder: (c,qdata){
-                  if(qdata.hasData)
-                    {
-                      return ListView.builder(itemBuilder: (context,index){
-                        return ListTile(
-                          title: Text(qdata.data[index]["msg"].toString()),
-                          subtitle: Text(qdata.data[index]["id"].toString()),
-                        );
-                      },itemCount: qdata.data.length,);
-                    }
-                  else{
-                    return Text("no data");
-                  }
-                },
-              );
-            }
-          else{
+      appBar: AppBar(
+        title: Text("TEST"),
+      ),
+      body: FutureBuilder<List<SmsTransaction>>(
+        future: doa.loadTransactions(),
+        builder: (context, data) {
+          if (data.hasData) {
+            var items = data.data;
+            return ListView.builder(
+              itemBuilder: (context, index) {
+                var item = items[index];
+                return ListTile(
+                  title: Text(item.name),
+                  subtitle: Text(item.tags.join(" , ")),
+                );
+              },
+              itemCount: data.data.length,
+            );
+          } else {
             return Text("Loading");
           }
         },

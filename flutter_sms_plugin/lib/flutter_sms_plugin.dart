@@ -41,6 +41,10 @@ class FlutterSmsPlugin {
     return await _channel.invokeMethod<void>('SmsPlugin.requestPermissions');
   }
 
+  Future<void> readSms(){
+
+  }
+
   Future<bool> start() async {
     final CallbackHandle backgroundSetupHandle =
         PluginUtilities.getCallbackHandle(smsCallbackDispatcher);
